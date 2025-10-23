@@ -1,0 +1,140 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: platform-service
+  namespace: default
+  labels:
+    app: platform-service
+    version: v1
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: platform-service
+  template:
+    metadata:
+      labels:
+        app: platform-service
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9464"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: platform-service
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: platform-service
+        image: platform-service:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        - containerPort: 9464
+          name: metrics
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: "3000"
+        - name: LOG_LEVEL
+          value: "info"
+        - name: SERVICE_NAME
+          value: "platform-service"
+        - name: APP_VERSION
+          value: "1.0.0"
+        - name: DB_HOST
+          valueFrom:
+            secretKeyRef:
+              name: platform-secrets
+              key: db-host
+        - name: DB_PORT
+          valueFrom:
+            secretKeyRef:
+              name: platform-secrets
+              key: db-port
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: platform-secrets
+              key: db-name
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: platform-secrets
+              key: db-user
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: platform-secrets
+              key: db-password
+        - name: REDIS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: platform-config
+              key: redis-host
+        - name: REDIS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: platform-config
+              key: redis-port
+        - name: OTEL_EXPORTER_TYPE
+          value: "otlp"
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: "http://otel-collector:4318/v1/traces"
+        - name: PROMETHEUS_METRICS_PORT
+          value: "9464"
+        - name: AUDIT_RETENTION_DAYS
+          value: "90"
+        - name: VAULT_ENABLED
+          value: "false"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health/liveness
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/readiness
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      - name: logs
+        emptyDir: {}

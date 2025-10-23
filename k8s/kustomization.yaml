@@ -1,0 +1,22 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+  - secrets.yaml
+  - serviceaccount.yaml
+  - hpa.yaml
+  - networkpolicy.yaml
+
+commonLabels:
+  app: platform-service
+  version: v1
+  managed-by: kustomize
+
+namespace: default
+
+images:
+  - name: platform-service
+    newTag: latest
