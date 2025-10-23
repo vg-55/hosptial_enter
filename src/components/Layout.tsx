@@ -13,6 +13,9 @@ import {
   Menu,
   X,
   LogOut,
+  CreditCard,
+  Stethoscope,
+  Calendar,
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -25,15 +28,30 @@ const menuItems = [
   { path: '/occupancy', icon: Building2, label: 'Occupancy' },
   { path: '/resource-utilization', icon: Package, label: 'Resources' },
   { path: '/medicine-usage', icon: Pill, label: 'Medicine' },
+  { path: '/billing', icon: CreditCard, label: 'Billing', requiredRoles: ['admin', 'manager'] },
+  { path: '/clinical', icon: Stethoscope, label: 'Clinical Docs', requiredRoles: ['admin', 'manager'] },
+  { path: '/staff', icon: Calendar, label: 'Staff Mgmt', requiredRoles: ['admin', 'manager'] },
   { path: '/finance-kpi', icon: DollarSign, label: 'Finance' },
-  { path: '/staff-performance', icon: Users, label: 'Staff' },
+  { path: '/staff-performance', icon: Users, label: 'Performance' },
   { path: '/custom-reports', icon: FileText, label: 'Custom Reports' },
 ];
+
+interface MenuItem {
+  path: string;
+  icon: any;
+  label: string;
+  requiredRoles?: string[];
+}
 
 export default function Layout({ children }: LayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
-  const { user, logout } = useAuthStore();
+  const { user, logout, hasRole } = useAuthStore();
+
+  const filteredMenuItems = (menuItems as MenuItem[]).filter((item) => {
+    if (!item.requiredRoles) return true;
+    return hasRole(item.requiredRoles as any);
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -72,7 +90,7 @@ export default function Layout({ children }: LayoutProps) {
           } lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-10 w-64 bg-white shadow-lg transition-transform duration-300 ease-in-out mt-16 lg:mt-0`}
         >
           <nav className="h-full overflow-y-auto py-4">
-            {menuItems.map((item) => {
+            {filteredMenuItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
               return (
