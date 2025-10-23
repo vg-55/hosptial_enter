@@ -1,292 +1,404 @@
-# Platform Compliance & Observability Service
+# Platform Monorepo
 
-A production-ready platform with comprehensive compliance, observability, and security features.
+A comprehensive pnpm-based monorepo featuring NestJS backend, Next.js 14 frontend, and shared design tokens and utilities.
 
-## Features
+## 🏗️ Project Structure
 
-### 🔍 Observability
-- **Centralized Logging**: Structured logging with Pino, correlation IDs, and automatic redaction
-- **Metrics**: Prometheus-compatible metrics with custom metric support
-- **Distributed Tracing**: OpenTelemetry integration with Jaeger/OTLP exporters
-- **Health Checks**: Liveness, readiness, and custom health checks
+```
+platform-monorepo/
+├── apps/
+│   ├── backend/          # NestJS API service
+│   │   ├── src/
+│   │   │   ├── common/
+│   │   │   │   ├── config/       # Configuration module
+│   │   │   │   └── logger/       # Logging module (Pino)
+│   │   │   ├── modules/
+│   │   │   │   └── health/       # Health check endpoints
+│   │   │   ├── app.module.ts
+│   │   │   └── main.ts
+│   │   ├── test/
+│   │   ├── Dockerfile
+│   │   ├── jest.config.js
+│   │   ├── nest-cli.json
+│   │   └── package.json
+│   │
+│   └── frontend/         # Next.js 14 web application
+│       ├── src/
+│       │   ├── app/              # App router pages
+│       │   │   ├── layout.tsx
+│       │   │   └── page.tsx
+│       │   ├── components/       # React components
+│       │   └── theme/            # Chakra UI theme
+│       ├── tests/                # Playwright E2E tests
+│       ├── public/
+│       ├── Dockerfile
+│       ├── jest.config.js
+│       ├── playwright.config.ts
+│       └── package.json
+│
+├── packages/
+│   ├── shared/           # Shared utilities and design tokens
+│   │   ├── src/
+│   │   │   ├── theme/
+│   │   │   │   └── tokens/       # Colors, spacing, typography
+│   │   │   └── utils/            # Utility functions
+│   │   └── package.json
+│   │
+│   └── types/            # Shared TypeScript types
+│       ├── src/
+│       │   ├── api.types.ts
+│       │   └── index.ts
+│       └── package.json
+│
+├── .github/
+│   └── workflows/
+│       └── ci.yml        # CI/CD pipeline
+│
+├── .husky/               # Git hooks (pre-commit, commit-msg, pre-push)
+├── docker-compose.yml    # Local development environment
+├── pnpm-workspace.yaml   # pnpm workspace configuration
+└── package.json          # Root package.json
 
-### 🔐 Security & Compliance
-- **Field-level Encryption**: AES-256-GCM encryption for sensitive data
-- **Data Masking**: Built-in masking for PII (emails, SSN, credit cards)
-- **Secrets Management**: HashiCorp Vault integration
-- **Audit Trail**: Comprehensive audit logging with export capabilities
-- **Security Scanning**: ESLint security plugin, Snyk integration
-
-### 🚀 Production Ready
-- **Docker Support**: Multi-stage builds with security best practices
-- **Kubernetes Manifests**: Complete K8s deployment with HPA, network policies
-- **Backup/Restore**: Automated database backup scripts
-- **Monitoring**: Prometheus, Grafana integration
-- **High Availability**: Auto-scaling, health checks, graceful shutdown
-
-## Quick Start
-
-### Prerequisites
-- Node.js >= 18.0.0
-- PostgreSQL >= 15
-- Redis >= 7
-- Docker (optional)
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd platform-compliance-observability
-
-# Install dependencies
-npm install
-
-# Copy environment variables
-cp .env.example .env
-
-# Generate encryption keys
-echo "ENCRYPTION_MASTER_KEY=$(openssl rand -base64 32)" >> .env
-echo "ENCRYPTION_SALT=$(openssl rand -base64 32)" >> .env
-
-# Build the project
-npm run build
-
-# Start the service
-npm start
 ```
 
-### Development
+## 🚀 Tech Stack
 
+### Backend (NestJS)
+- **Framework**: NestJS 10
+- **Runtime**: Node.js 18+
+- **Language**: TypeScript 5 (strict mode)
+- **Logging**: Pino with nestjs-pino
+- **Configuration**: @nestjs/config + Joi validation
+- **Security**: Helmet, CORS, Rate limiting (@nestjs/throttler)
+- **Testing**: Jest with ts-jest
+- **Database**: PostgreSQL (via Docker)
+- **Cache**: Redis (via Docker)
+- **Storage**: MinIO (S3-compatible, via Docker)
+
+### Frontend (Next.js)
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript 5
+- **UI Library**: Chakra UI 2
+- **Styling**: Emotion (CSS-in-JS)
+- **Testing**: Jest + React Testing Library + Playwright
+- **Fonts**: Inter (Google Fonts)
+
+### Shared Packages
+- **Design Tokens**: Colors, spacing, typography
+- **Utilities**: Format functions (currency, date, number)
+- **Types**: Shared TypeScript interfaces
+
+### Infrastructure
+- **Monorepo**: pnpm workspaces
+- **Containerization**: Docker + Docker Compose
+- **CI/CD**: GitHub Actions
+- **Git Hooks**: Husky + lint-staged + commitlint
+- **Code Quality**: ESLint, Prettier, TypeScript
+
+## 📦 Prerequisites
+
+- **Node.js**: >= 18.17.0
+- **pnpm**: >= 8.9.0
+- **Docker**: >= 20.10 (for local development)
+- **Docker Compose**: >= 2.0
+
+## 🛠️ Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd platform-monorepo
+   ```
+
+2. Install pnpm globally (if not already installed):
+   ```bash
+   npm install -g pnpm@8.9.0
+   ```
+
+3. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+4. Set up Git hooks:
+   ```bash
+   pnpm prepare
+   ```
+
+5. Copy environment variables:
+   ```bash
+   cp .env.example .env
+   cp apps/backend/.env.example apps/backend/.env
+   cp apps/frontend/.env.example apps/frontend/.env
+   ```
+
+## 🔧 Development
+
+### Local Development (without Docker)
+
+1. **Start services** (PostgreSQL, Redis, MinIO):
+   ```bash
+   docker-compose up postgres redis minio -d
+   ```
+
+2. **Start backend**:
+   ```bash
+   pnpm dev:backend
+   # or
+   cd apps/backend && pnpm start:dev
+   ```
+
+3. **Start frontend** (in a new terminal):
+   ```bash
+   pnpm dev:frontend
+   # or
+   cd apps/frontend && pnpm dev
+   ```
+
+### Local Development (with Docker)
+
+Run all services (backend, frontend, database, cache, storage):
 ```bash
-# Run in development mode
-npm run dev
-
-# Run tests
-npm test
-
-# Lint code
-npm run lint
-
-# Type check
-npm run typecheck
+docker-compose up
 ```
 
-### Docker Deployment
+Access:
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:3001
+- **Backend Health**: http://localhost:3001/health
+- **MinIO Console**: http://localhost:9001 (minioadmin/minioadmin)
+
+## 📝 Available Scripts
+
+### Root-level Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm build` | Build all packages |
+| `pnpm dev` | Start backend and frontend in parallel |
+| `pnpm dev:backend` | Start backend only |
+| `pnpm dev:frontend` | Start frontend only |
+| `pnpm lint` | Lint all packages |
+| `pnpm lint:fix` | Lint and auto-fix all packages |
+| `pnpm test` | Run tests in all packages |
+| `pnpm test:watch` | Run tests in watch mode |
+| `pnpm typecheck` | Type-check all packages |
+| `pnpm format` | Format all files with Prettier |
+| `pnpm format:check` | Check formatting with Prettier |
+
+### Backend Scripts
 
 ```bash
-# Build and run with Docker Compose
-docker-compose up -d
+cd apps/backend
 
-# View logs
-docker-compose logs -f app
+pnpm build         # Build for production
+pnpm start         # Start production server
+pnpm start:dev     # Start development server with watch mode
+pnpm start:debug   # Start development server with debugger
+pnpm lint          # Lint TypeScript files
+pnpm lint:fix      # Lint and auto-fix
+pnpm test          # Run unit tests
+pnpm test:watch    # Run tests in watch mode
+pnpm test:cov      # Run tests with coverage
+pnpm typecheck     # Type-check without emitting
+```
 
-# Stop services
+### Frontend Scripts
+
+```bash
+cd apps/frontend
+
+pnpm dev           # Start development server
+pnpm build         # Build for production
+pnpm start         # Start production server
+pnpm lint          # Lint files
+pnpm lint:fix      # Lint and auto-fix
+pnpm test          # Run Jest unit tests
+pnpm test:watch    # Run tests in watch mode
+pnpm test:e2e      # Run Playwright E2E tests
+pnpm test:e2e:ui   # Run E2E tests with UI
+pnpm typecheck     # Type-check without emitting
+```
+
+## 🔒 Environment Variables
+
+### Backend (`apps/backend/.env`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NODE_ENV` | Environment (development/production/test) | `development` |
+| `HOST` | Server host | `0.0.0.0` |
+| `PORT` | Server port | `3001` |
+| `CORS_ORIGIN` | Allowed CORS origin | `*` |
+| `RATE_LIMIT_TTL` | Rate limit window (seconds) | `60` |
+| `RATE_LIMIT_LIMIT` | Max requests per window | `60` |
+| `DATABASE_URL` | PostgreSQL connection string | Required |
+| `REDIS_URL` | Redis connection string | Optional |
+| `MINIO_ENDPOINT` | MinIO endpoint | `http://minio:9000` |
+| `MINIO_ACCESS_KEY` | MinIO access key | Required |
+| `MINIO_SECRET_KEY` | MinIO secret key | Required |
+| `MINIO_BUCKET` | MinIO bucket name | `assets` |
+| `LOG_LEVEL` | Log level (trace/debug/info/warn/error/fatal) | `info` |
+
+### Frontend (`apps/frontend/.env.local`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NEXT_PUBLIC_API_URL` | Backend API base URL | `http://localhost:3001` |
+
+## 🧪 Testing
+
+### Unit Tests
+```bash
+# Run all unit tests
+pnpm test
+
+# Run backend tests only
+pnpm --filter @platform/backend test
+
+# Run frontend tests only
+pnpm --filter @platform/frontend test
+
+# Run tests with coverage
+pnpm --filter @platform/backend test:cov
+```
+
+### E2E Tests (Playwright)
+```bash
+# Install Playwright browsers (first time)
+cd apps/frontend
+pnpm exec playwright install
+
+# Run E2E tests
+pnpm --filter @platform/frontend test:e2e
+
+# Run E2E tests with UI
+pnpm --filter @platform/frontend test:e2e:ui
+```
+
+## 🐳 Docker
+
+### Build Images
+
+```bash
+# Build backend
+docker build -f apps/backend/Dockerfile -t platform-backend .
+
+# Build frontend
+docker build -f apps/frontend/Dockerfile -t platform-frontend .
+```
+
+### Run with Docker Compose
+
+```bash
+# Start all services
+docker-compose up
+
+# Start specific service
+docker-compose up backend
+
+# Rebuild and start
+docker-compose up --build
+
+# Stop all services
 docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
 ```
 
-### Kubernetes Deployment
+## 🚢 CI/CD
 
-```bash
-# Apply all Kubernetes manifests
-kubectl apply -f k8s/
+GitHub Actions pipeline (`.github/workflows/ci.yml`) runs on push/PR to `main` and `develop`:
 
-# Check deployment status
-kubectl get pods -l app=platform-service
+1. **Lint**: ESLint checks
+2. **Type Check**: TypeScript compilation
+3. **Format Check**: Prettier validation
+4. **Unit Tests**: Jest tests with PostgreSQL/Redis services
+5. **Build**: Production build of all packages
 
-# View logs
-kubectl logs -f -l app=platform-service
+## 🔐 Code Quality & Git Hooks
 
-# Port forward for local access
-kubectl port-forward svc/platform-service 3000:80
-```
+### Pre-commit Hook
+- Runs `lint-staged` to lint and format staged files
+- Configured in `.husky/pre-commit`
 
-## API Endpoints
+### Commit Message Hook
+- Validates commit messages using commitlint
+- Follows [Conventional Commits](https://www.conventionalcommits.org/)
+- Format: `type(scope?): subject`
+- Examples:
+  - `feat(backend): add user authentication`
+  - `fix(frontend): correct button alignment`
+  - `docs: update README`
 
-### Health & Monitoring
-- `GET /health` - Overall health check
-- `GET /health/liveness` - Kubernetes liveness probe
-- `GET /health/readiness` - Kubernetes readiness probe
-- `GET /metrics` - Prometheus metrics
+### Pre-push Hook
+- Runs all unit tests
+- Runs TypeScript type checking
+- Configured in `.husky/pre-push`
 
-### Audit
-- `GET /audit/export` - Export audit logs (JSON/CSV)
-  - Query params: `format`, `eventType`, `userId`, `startDate`, `endDate`
-- `GET /audit/retention` - Get retention policy
-- `POST /audit/cleanup` - Cleanup old audit events
+## 📁 Module Boundaries
 
-## Configuration
-
-### Environment Variables
-
-See `.env.example` for all available configuration options.
-
-### Logging
-
-Logs are structured JSON with automatic correlation IDs:
+### Backend Module Structure
 
 ```typescript
-import { createLogger } from './logging/logger';
-
-const logger = createLogger({ userId: '123' });
-logger.info('User action', { action: 'login' });
+apps/backend/src/
+├── common/              # Shared utilities, guards, decorators
+│   ├── config/          # Configuration setup
+│   └── logger/          # Logging setup
+├── modules/             # Feature modules
+│   └── health/          # Health check module
+└── main.ts              # Application entry point
 ```
 
-### Metrics
-
-Custom metrics can be created:
+### Frontend App Structure
 
 ```typescript
-import { metricsService } from './metrics/prometheus';
-
-const counter = metricsService.createCounter(
-  'custom_events_total',
-  'Total custom events'
-);
-counter.inc();
+apps/frontend/src/
+├── app/                 # Next.js App Router
+│   ├── layout.tsx       # Root layout
+│   └── page.tsx         # Home page
+├── components/          # Reusable React components
+└── theme/               # Chakra UI theme configuration
 ```
 
-### Audit Logging
+## 🤝 Contributing
 
-```typescript
-import { auditLogger, AuditEventType } from './audit/audit-logger';
+1. Create a new branch: `git checkout -b feature/my-feature`
+2. Make your changes and commit following conventional commits
+3. Ensure tests pass: `pnpm test`
+4. Ensure linting passes: `pnpm lint`
+5. Ensure type checking passes: `pnpm typecheck`
+6. Push and create a pull request
 
-auditLogger.logUserAction(
-  'user-123',
-  'data-access',
-  'customer',
-  'cust-456'
-);
-```
+## 📚 Additional Resources
 
-### Encryption
+- [NestJS Documentation](https://docs.nestjs.com/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Chakra UI Documentation](https://chakra-ui.com/docs/getting-started)
+- [pnpm Documentation](https://pnpm.io/)
+- [Conventional Commits](https://www.conventionalcommits.org/)
 
-```typescript
-import { fieldEncryption } from './security/encryption';
+## 📄 License
 
-const encrypted = fieldEncryption.encryptField('sensitive-data', 'context');
-const decrypted = fieldEncryption.decryptField(encrypted, 'context');
-```
+MIT License - see LICENSE file for details
 
-## Security
+## 🛟 Troubleshooting
 
-### Best Practices Implemented
+### pnpm install fails
+- Ensure you're using pnpm >= 8.9.0: `pnpm --version`
+- Try clearing cache: `pnpm store prune`
 
-1. **Secrets Management**: All secrets via environment variables or Vault
-2. **Encryption**: AES-256-GCM for field-level encryption
-3. **Data Masking**: Automatic PII redaction in logs
-4. **Audit Trail**: Complete audit logging with retention
-5. **Dependency Scanning**: Snyk integration for vulnerability detection
-6. **Static Analysis**: ESLint with security plugin
-7. **Container Security**: Non-root user, read-only filesystem
-8. **Network Policies**: Kubernetes network isolation
+### Docker containers fail to start
+- Check if ports 3000, 3001, 5432, 6379, 9000, 9001 are available
+- Ensure Docker daemon is running: `docker info`
+- Check logs: `docker-compose logs <service-name>`
 
-### Security Scanning
+### TypeScript errors in IDE
+- Restart TypeScript server in your IDE
+- Ensure all packages are built: `pnpm build`
+- Check `tsconfig.json` paths are correct
 
-```bash
-# Run security audit
-npm run security:audit
-
-# Run Snyk scan (requires Snyk CLI)
-npm run security:scan
-
-# Run static analysis
-npm run security:sast
-```
-
-## Backup & Restore
-
-### Database Backup
-
-```bash
-# Manual backup
-npm run backup:db
-
-# Automated backup (configure in crontab)
-0 2 * * * /path/to/project/scripts/backup-restore/backup-db.sh
-```
-
-### Database Restore
-
-```bash
-# List available backups
-ls -lh backups/
-
-# Restore from backup
-npm run restore:db backups/backup_platform_db_20231225_020000.sql.gz
-```
-
-## Monitoring
-
-### Prometheus Metrics
-
-The service exposes metrics at `/metrics`:
-- HTTP request duration and count
-- Error rates
-- Active connections
-- Memory and CPU usage
-- Custom business metrics
-
-### Grafana Dashboards
-
-Pre-configured dashboards available in `monitoring/grafana/dashboards/`.
-
-### Alerts
-
-Prometheus alerts configured in `monitoring/alerts.yml`:
-- High error rate
-- High latency
-- Service down
-- Resource exhaustion
-
-## Compliance
-
-### Data Retention
-
-- Audit logs: 90 days (configurable via `AUDIT_RETENTION_DAYS`)
-- Database backups: 30 days (configurable via `BACKUP_RETENTION_DAYS`)
-
-### GDPR Compliance
-
-- Right to access: Audit export API
-- Right to erasure: Documented procedures
-- Data encryption: Field-level encryption
-- Audit trail: Complete activity logging
-
-## Disaster Recovery
-
-See `docs/disaster-recovery-runbook.md` for complete procedures.
-
-### RTO/RPO Targets
-
-- RTO (Recovery Time Objective): 1 hour
-- RPO (Recovery Point Objective): 24 hours (daily backups)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Service won't start**
-   - Check environment variables
-   - Verify database connectivity
-   - Check logs: `docker-compose logs app`
-
-2. **High memory usage**
-   - Check `/metrics` for memory stats
-   - Review audit log retention
-   - Scale horizontally
-
-3. **Health checks failing**
-   - Check `/health` for detailed status
-   - Verify dependencies (DB, Redis)
-
-## Contributing
-
-1. Follow existing code style
-2. Add tests for new features
-3. Update documentation
-4. Run linting and type checks
-
-## License
-
-MIT
+### Git hooks not running
+- Reinstall hooks: `pnpm prepare`
+- Make hooks executable: `chmod +x .husky/*`

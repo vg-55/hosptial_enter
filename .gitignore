@@ -1,22 +1,37 @@
 # Dependencies
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
+.pnp
+.pnp.js
 
-# Build output
-dist/
+# Testing
+coverage/
+.nyc_output/
+
+# Production
 build/
-*.js.map
+dist/
+.next/
+out/
 
 # Environment variables
 .env
 .env.local
-.env.*.local
-.env.production
-.env.staging
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
 
 # IDE
 .vscode/
@@ -24,42 +39,22 @@ build/
 *.swp
 *.swo
 *~
-.DS_Store
 
-# Logs
-logs/
-*.log
-npm-debug.log*
-pino-*.log
+# Debug
+.vscode-test
 
-# Coverage
-coverage/
-.nyc_output/
-
-# Secrets
-secrets/
+# Misc
 *.pem
-*.key
-*.crt
-*.p12
-.vault-token
 
-# Backup files
-backups/*.sql
-backups/*.dump
-*.backup
+# Docker volumes
+/postgres_data
+/redis_data
+/minio_data
 
-# OS
-Thumbs.db
+# pnpm
+.pnpm-debug.log*
 
-# Testing
-.jest-cache/
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Monitoring data
-prometheus-data/
-grafana-data/
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
