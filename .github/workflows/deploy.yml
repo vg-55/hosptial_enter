@@ -1,0 +1,160 @@
+name: Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_URL }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.REGISTRY_URL }}/platform-service
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.platform.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/platform-service \
+            platform-service=${{ needs.build-and-push.outputs.image-tag }} \
+            --namespace=staging
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/platform-service \
+            --namespace=staging \
+            --timeout=5m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n staging -l app=platform-service
+          kubectl exec -n staging deployment/platform-service -- curl -f http://localhost:3000/health
+
+      - name: Run smoke tests
+        run: |
+          curl -f https://staging.platform.example.com/health
+          curl -f https://staging.platform.example.com/metrics
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-and-push, deploy-staging]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://platform.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'latest'
+
+      - name: Configure kubectl
+        run: |
+          echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > kubeconfig
+          export KUBECONFIG=kubeconfig
+
+      - name: Update deployment image
+        run: |
+          kubectl set image deployment/platform-service \
+            platform-service=${{ needs.build-and-push.outputs.image-tag }} \
+            --namespace=production
+
+      - name: Wait for rollout
+        run: |
+          kubectl rollout status deployment/platform-service \
+            --namespace=production \
+            --timeout=10m
+
+      - name: Verify deployment
+        run: |
+          kubectl get pods -n production -l app=platform-service
+          kubectl exec -n production deployment/platform-service -- curl -f http://localhost:3000/health
+
+      - name: Run smoke tests
+        run: |
+          curl -f https://platform.example.com/health
+          curl -f https://platform.example.com/metrics
+
+      - name: Notify deployment
+        if: success()
+        run: |
+          echo "Production deployment successful!"
+          # Add Slack/email notification here
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          kubectl rollout undo deployment/platform-service --namespace=production
+          echo "Production deployment failed, rolled back to previous version"

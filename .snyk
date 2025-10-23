@@ -1,0 +1,10 @@
+version: v1.22.0
+language-settings:
+  node:
+    packageManager: npm
+    nodeVersion: 18
+exclude:
+  global:
+    - node_modules/**
+    - dist/**
+    - coverage/**
